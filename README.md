@@ -1,5 +1,25 @@
-[![ModAssistant](https://cdn.assistant.moe/images/ModAssistant/Icons/Banner.svg)](https://github.com/Assistant/ModAssistant/releases/latest)
-[![Download here!](https://cdn.assistant.moe/images/ModAssistant/Icons/Download.svg)](https://github.com/Assistant/ModAssistant/releases/latest)
+[![ModAssistant](https://cdn.assistant.moe/images/ModAssistant/Icons/Banner.svg)](https://github.com/mitch030504/ModAssistant-UNRESTRICTED/releases/latest)
+[![Download here!](https://cdn.assistant.moe/images/ModAssistant/Icons/Download.svg)](https://github.com/mitch030504/ModAssistant-UNRESTRICTED/releases/latest)
+
+
+
+
+
+
+
+
+I HAVE REMOVED THE ANTI PIRACY CHECK FOR VERSION 1.1.2
+
+
+
+
+
+
+
+
+
+
+
 
 ModAssistant is a PC mod installer for Beat Saber. It uses mods from [BeatMods](https://beatmods.com/).
 
