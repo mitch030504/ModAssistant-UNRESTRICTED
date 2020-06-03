@@ -1,25 +1,5 @@
-[![ModAssistant](https://cdn.assistant.moe/images/ModAssistant/Icons/Banner.svg)](https://github.com/mitch030504/ModAssistant-UNRESTRICTED/releases/latest)
-[![Download here!](https://cdn.assistant.moe/images/ModAssistant/Icons/Download.svg)](https://github.com/mitch030504/ModAssistant-UNRESTRICTED/releases/latest)
-
-
-
-
-
-
-
-
-I HAVE REMOVED THE ANTI PIRACY CHECK FOR VERSION 1.1.2
-
-
-
-
-
-
-
-
-
-
-
+[![ModAssistant](https://cdn.assistant.moe/images/ModAssistant/Icons/Banner.svg)](https://github.com/Assistant/ModAssistant/releases/latest)
+[![Download here!](https://cdn.assistant.moe/images/ModAssistant/Icons/Download.svg)](https://github.com/Assistant/ModAssistant/releases/latest)
 
 ModAssistant is a PC mod installer for Beat Saber. It uses mods from [BeatMods](https://beatmods.com/).
 
@@ -156,3 +136,6 @@ Examples:
 **I hit install but now my game won't launch, I can't click any buttons, I only see a black screen, etc**
   Please visit the [Beat Saber Modding Group](https://discord.gg/beatsabermods) `#pc-help` channels. Check the pinned messages or ask for help and see if you can work out things out.
   
+## Credits
+semver by Max Hauser
+https://github.com/maxhauser/semver

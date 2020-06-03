@@ -11,6 +11,9 @@ using System.Windows.Data;
 using System.Windows.Forms;
 using System.Windows.Navigation;
 using static ModAssistant.Http;
+using ModAssistant.Libs;
+using System.Windows.Media.Animation;
+using TextBox = System.Windows.Controls.TextBox;
 
 namespace ModAssistant.Pages
 {
@@ -222,7 +225,7 @@ namespace ModAssistant.Pages
         {
             foreach (Mod mod in AllModsList)
             {
-                if (mod.name.ToLower() != "bsipa")
+                if (mod.name.ToLower() != "bsipa" && mod.status != "declined")
                 {
                     foreach (Mod.DownloadLink download in mod.downloads)
                     {
@@ -315,6 +318,12 @@ namespace ModAssistant.Pages
 
             foreach (Mod mod in ModsList)
             {
+                // Ignore mods that are newer than installed version
+                if (mod.ListItem.GetVersionComparison > 0) continue;
+
+                // Ignore mods that are on current version if we aren't reinstalling mods
+                if (mod.ListItem.GetVersionComparison == 0 && !App.ReinstallInstalledMods) continue;
+
                 if (mod.name.ToLower() == "bsipa")
                 {
                     MainWindow.Instance.MainText = $"{string.Format((string)FindResource("Mods:InstallingMod"), mod.name)}...";
@@ -384,7 +393,7 @@ namespace ModAssistant.Pages
 
                     if (!string.IsNullOrEmpty(file.Name))
                     {
-                        file.ExtractToFile(Path.Combine(directory, file.FullName), true);
+                        await ExtractFile(file, Path.Combine(directory, file.FullName), 3.0, mod.name, 10);
                     }
                 }
             }
@@ -394,6 +403,27 @@ namespace ModAssistant.Pages
                 mod.ListItem.IsInstalled = true;
                 mod.ListItem.InstalledVersion = mod.version;
                 mod.ListItem.InstalledModInfo = mod;
+            }
+        }
+
+        private async Task ExtractFile(ZipArchiveEntry file, string path, double seconds, string name, int maxTries, int tryNumber = 0)
+        {
+            if (tryNumber < maxTries)
+            {
+                try
+                {
+                    file.ExtractToFile(path, true);
+                }
+                catch
+                {
+                    MainWindow.Instance.MainText = $"{string.Format((string)FindResource("Mods:FailedExtract"), name, seconds, tryNumber + 1, maxTries)}";
+                    await Task.Delay((int)(seconds * 1000));
+                    await ExtractFile(file, path, seconds, name, maxTries, tryNumber + 1);
+                }
+            }
+            else
+            {
+                System.Windows.MessageBox.Show($"{string.Format((string)FindResource("Mods:FailedExtractMaxReached"), name, maxTries)}.", "Failed to install " + name);
             }
         }
 
@@ -510,16 +540,23 @@ namespace ModAssistant.Pages
 
             public Mod InstalledModInfo { get; set; }
             public bool IsInstalled { get; set; }
-            private string _installedVersion { get; set; }
+            private SemVersion _installedVersion { get; set; }
             public string InstalledVersion
             {
                 get
                 {
-                    return (string.IsNullOrEmpty(_installedVersion) || !IsInstalled) ? "-" : _installedVersion;
+                    if (!IsInstalled || _installedVersion == null) return "-";
+                    return _installedVersion.ToString();
                 }
                 set
                 {
-                    _installedVersion = value;
+                    if (SemVersion.TryParse(value, out SemVersion tempInstalledVersion))
+                    {
+                        _installedVersion = tempInstalledVersion;
+                    } else
+                    {
+                        _installedVersion = null;
+                    }
                 }
             }
 
@@ -528,7 +565,7 @@ namespace ModAssistant.Pages
                 get
                 {
                     if (!IsInstalled) return "Black";
-                    return InstalledVersion == ModVersion ? "Green" : "Red";
+                    return _installedVersion >= ModVersion ? "Green" : "Red";
                 }
             }
 
@@ -537,7 +574,17 @@ namespace ModAssistant.Pages
                 get
                 {
                     if (!IsInstalled) return "None";
-                    return InstalledVersion == ModVersion ? "None" : "Strikethrough";
+                    return _installedVersion >= ModVersion ? "None" : "Strikethrough";
+                }
+            }
+
+            public int GetVersionComparison
+            {
+                get
+                {
+                    if (!IsInstalled || _installedVersion < ModVersion) return -1;
+                    if (_installedVersion > ModVersion) return 1;
+                    return 0;
                 }
             }
 
@@ -665,6 +712,66 @@ namespace ModAssistant.Pages
         private void Page_Loaded(object sender, RoutedEventArgs e)
         {
             RefreshColumns();
+        }
+
+        private void CopyText(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            System.Windows.Clipboard.SetText(((TextBlock)sender).Text);
+            Utils.SendNotify("Copied text to clipboard");
+        }
+
+        private void SearchButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (SearchBar.Height == 0)
+            {
+                SearchBar.Focus();
+                Animate(SearchBar, 0, 16, new TimeSpan(0, 0, 0, 0, 300));
+                Animate(SearchText, 0, 16, new TimeSpan(0, 0, 0, 0, 300));
+                ModsListView.Items.Filter = new Predicate<object>(SearchFilter);
+            }
+            else
+            {
+                Animate(SearchBar, 16, 0, new TimeSpan(0, 0, 0, 0, 300));
+                Animate(SearchText, 16, 0, new TimeSpan(0, 0, 0, 0, 300));
+                ModsListView.Items.Filter = null;
+            }
+        }
+
+        private void SearchBar_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            ModsListView.Items.Filter = new Predicate<object>(SearchFilter);
+            if (SearchBar.Text.Length > 0)
+            {
+                SearchText.Text = null;
+            }
+            else
+            {
+                SearchText.Text = (string)FindResource("Mods:SearchLabel");
+            }
+        }
+
+        private bool SearchFilter(object mod)
+        {
+            ModListItem item = mod as ModListItem;
+            if (item.ModName.ToLower().Contains(SearchBar.Text.ToLower())) return true;
+            if (item.ModDescription.ToLower().Contains(SearchBar.Text.ToLower())) return true;
+            if (item.ModName.ToLower().Replace(" ", string.Empty).Contains(SearchBar.Text.ToLower().Replace(" ", string.Empty))) return true;
+            if (item.ModDescription.ToLower().Replace(" ", string.Empty).Contains(SearchBar.Text.ToLower().Replace(" ", string.Empty))) return true;
+            return false;
+        }
+
+        private void Animate(TextBlock target, double oldHeight, double newHeight, TimeSpan duration)
+        {
+            target.Height = oldHeight;
+            DoubleAnimation animation = new DoubleAnimation(newHeight, duration);
+            target.BeginAnimation(TextBlock.HeightProperty, animation);
+        }
+
+        private void Animate(TextBox target, double oldHeight, double newHeight, TimeSpan duration)
+        {
+            target.Height = oldHeight;
+            DoubleAnimation animation = new DoubleAnimation(newHeight, duration);
+            target.BeginAnimation(TextBox.HeightProperty, animation);
         }
     }
 }

@@ -65,6 +65,8 @@ namespace ModAssistant
             Themes.LoadThemes();
             Themes.FirstLoad(Properties.Settings.Default.SelectedTheme);
 
+            Languages.LoadLanguages();
+
             Task.Run(() => LoadVersionsAsync());
 
             if (!Properties.Settings.Default.Agreed || string.IsNullOrEmpty(Properties.Settings.Default.LastTab))
@@ -95,11 +97,26 @@ namespace ModAssistant
             }
         }
 
+        /* Force the app to shutdown when The main window is closed.
+         *
+         * Explaination:
+         * OneClickStatus is initialized as a static object,
+         * so the window will exist, even if it is unused.
+         * This would cause Mod Assistant to not shutdown,
+         * because technically a window was still open.
+         */
+        protected override void OnClosed(EventArgs e)
+        {
+            base.OnClosed(e);
+
+            Application.Current.Shutdown();
+        }
+
         private async void LoadVersionsAsync()
         {
             try
             {
-                var resp = await HttpClient.GetAsync(Utils.Constants.BeatModsAPIUrl + "version");
+                var resp = await HttpClient.GetAsync(Utils.Constants.BeatModsVersions);
                 var body = await resp.Content.ReadAsStringAsync();
                 List<string> versions = JsonSerializer.Deserialize<string[]>(body).ToList();
 
